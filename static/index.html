@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		/>
+		<meta
+			http-equiv="X-UA-Compatible"
+			content="ie=edge"
+		/>
+		<title>DocExpire</title>
+		<link
+			rel="stylesheet"
+			href="../node_modules/material-design-lite/material.min.css"
+		/>
+		<script src="../node_modules/material-design-lite/material.min.js"></script>
+		<link
+			rel="stylesheet"
+			href="./icon.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="./styles.css"
+		/>
+		<style>
+			.mdl-grid.center-items {
+				justify-content: center;
+			}
+		</style>
+	</head>
+	<body>
+		<div
+			class="demo-layout mdl-layout mdl-layout--fixed-header mdl-js-layout mdl-color--grey-100"
+		>
+			<header
+				class="demo-header mdl-layout__header mdl-layout__header--scroll mdl-color--grey-100 mdl-color-text--grey-800"
+			>
+				<div class="mdl-layout__header-row">
+					<span class="mdl-layout-title">Documents to Expire</span>
+					<div class="mdl-layout-spacer"></div>
+					<div
+						class="mdl-textfield mdl-js-textfield mdl-textfield--expandable"
+					>
+						<label
+							class="mdl-button mdl-js-button mdl-button--icon"
+							for="search"
+						>
+							<i class="material-icons">search</i>
+						</label>
+						<div class="mdl-textfield__expandable-holder">
+							<input
+								class="mdl-textfield__input"
+								type="text"
+								id="search"
+								onkeyup="searchItems()"
+							/>
+							<label
+								class="mdl-textfield__label"
+								for="search"
+							>
+								Enter your query...
+							</label>
+						</div>
+					</div>
+				</div>
+			</header>
+			<div class="demo-ribbon"></div>
+			<main class="demo-main mdl-layout__content">
+				<div class="demo-container mdl-grid">
+					<div
+						class="mdl-cell mdl-cell--12-col mdl-cell--hide-tablet mdl-cell--hide-phone"
+					></div>
+					<div
+						class="demo-content mdl-color--white mdl-shadow--4dp content mdl-color-text--grey-800 mdl-cell mdl-cell--12-col"
+					>
+						<div class="mdl-grid center-items">
+							<div class="mdl-cell mdl-cell--12-col">
+								<ul
+									id="ulist"
+									class="demo-list-icon mdl-list"
+								></ul>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+		<script>
+			const electron = require('electron');
+			const { ipcRenderer } = electron;
+			const ul = document.querySelector('ul');
+			function createItemDom(item) {
+				let iparts = item.split(' | ');
+				let id = iparts[0].replace(' ', '_').replace('/', '-');
+				const doc = document.createElement('li');
+				doc.id = 'li_' + id;
+				doc.className = 'mdl-list__item';
+
+				const docText = document.createElement('span');
+				docText.className =
+					'mdl-chip mdl-chip--contact mdl-chip--deletable';
+
+				let exp = checkExpDate(iparts[1]);
+				const sp1 = document.createElement('span');
+				sp1.className =
+					exp == 'A'
+						? 'mdl-chip__contact mdl-color--teal mdl-color-text--white'
+						: 'mdl-chip__contact mdl-color--red mdl-color-text--white';
+				const sp1Txt = document.createTextNode(exp);
+				const sp2 = document.createElement('span');
+				sp2.className = 'mdl-chip__text';
+				sp2.setAttribute('data-expires', iparts[1]);
+				const sp2Txt = document.createTextNode(
+					iparts[0] + ' - ' + iparts[1]
+				);
+				const ar = document.createElement('a');
+				ar.className = 'mdl-chip__action';
+				ar.id = 'a_' + id;
+				const ir = document.createElement('i');
+				ir.className = 'material-icons';
+				const irTxt = document.createTextNode('cancel');
+				ir.appendChild(irTxt);
+				ar.appendChild(ir);
+
+				sp1.appendChild(sp1Txt);
+				docText.appendChild(sp1);
+				sp2.appendChild(sp2Txt);
+				docText.appendChild(sp2);
+				docText.appendChild(ar);
+				doc.appendChild(docText);
+				sortList(ul, doc, Date.parse(iparts[1]));
+				document
+					.getElementById(ar.id)
+					.addEventListener('click', deleteItem);
+			}
+			function deleteItem(e) {
+				let doc = e.target.parentNode.parentNode.parentNode;
+				doc.innerHTML = '';
+				doc.parentNode.removeChild(doc);
+			}
+			function checkExpDate(dt) {
+				let currentDate = Date.now();
+				let date = Date.parse(dt);
+				return !isNaN(date) && currentDate - date < 0 ? 'A' : 'E';
+			}
+			function searchItems() {
+				let input, filter, ul, li, a, i, txtValue;
+				input = document.getElementById('search');
+				filter = input.value.toUpperCase();
+				ul = document.getElementById('ulist');
+				li = ul.getElementsByTagName('li');
+				for (i = 0; i < li.length; i++) {
+					a = li[i].getElementsByTagName('a')[0];
+					txtValue =
+						(a.textContent || a.innerText) &&
+						(
+							a.parentNode.textContent || a.parentNode.innerText
+						).replace('cancel', '');
+					if (txtValue.toUpperCase().indexOf(filter) > -1) {
+						li[i].style.display = '';
+					} else {
+						li[i].style.display = 'none';
+					}
+				}
+			}
+			function sortList(ul, liitem, date) {
+				let flitem = null;
+				let found = false;
+				let items = document.querySelectorAll('.mdl-chip__text');
+				for (let i = 0; i < items.length; i++) {
+					cDate = Date.parse(items[i].getAttribute('data-expires'));
+					if (date >= cDate) {
+						cDate = date;
+					} else {
+						flitem = items[i].parentNode.parentNode;
+						found = true;
+						break;
+					}
+				}
+				if (liitem != null) {
+					if (found) {
+						ul.insertBefore(liitem, flitem);
+					} else {
+						ul.appendChild(liitem);
+					}
+				}
+			}
+			function addDeleteEvents() {
+				let items = document.querySelectorAll('.mdl-chip__action');
+				for (let i = 0; i < items.length; i++) {
+					items[i].addEventListener('click', deleteItem);
+				}
+			}
+			ipcRenderer.on('doc:add', (e, item) => {
+				createItemDom(item);
+				sortList(document.getElementById('ulist'));
+				addDeleteEvents();
+			});
+			ipcRenderer.on('doc:clear', () => {
+				ul.innerHTML = '';
+			});
+		</script>
+	</body>
+</html>

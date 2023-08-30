@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		/>
+		<meta
+			http-equiv="X-UA-Compatible"
+			content="ie=edge"
+		/>
+		<title>Document</title>
+		<link
+			rel="stylesheet"
+			href="../node_modules/material-design-lite/material.min.css"
+		/>
+		<script src="../node_modules/material-design-lite/material.min.js"></script>
+		<link
+			rel="stylesheet"
+			href="./icon.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="./styles.css"
+		/>
+		<style>
+			.mdl-layout {
+				align-items: center;
+				justify-content: center;
+			}
+			.mdl-layout__content {
+				padding: 24px;
+				flex: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="mdl-layout mdl-js-layout mdl-color--grey-100">
+			<main class="mdl-layout__content">
+				<div class="mdl-card mdl-shadow--6dp">
+					<div
+						class="mdl-card__title mdl-color--primary mdl-color-text--white"
+					>
+						<h2 class="mdl-card__title-text">New Document</h2>
+					</div>
+					<form>
+						<div class="mdl-card__supporting-text">
+							<div class="mdl-textfield mdl-js-textfield">
+								<label class="mdl-textfield__label">
+									Document name:
+								</label>
+								<input
+									class="mdl-textfield__input"
+									type="text"
+									id="name"
+									autofocus
+								/>
+							</div>
+							<div class="mdl-textfield mdl-js-textfield">
+								<label class="mdl textfield__label"
+									>Expiration date:
+								</label>
+								<input
+									class="mdl-textfield__input"
+									type="text"
+									id="date"
+									placeholder="16-Apr-2004"
+								/>
+							</div>
+						</div>
+						<div class="mdl-card__actions mdl-card--border">
+							<button
+								class="mdl-button mdl-js-button mdl-button--raised"
+								type="submit"
+							>
+								Save
+							</button>
+						</div>
+					</form>
+				</div>
+			</main>
+		</div>
+		<script>
+			const electron = require('electron');
+			const { ipcRenderer } = electron;
+			const form = document.querySelector('form');
+			form.addEventListener('submit', docSubmit);
+
+			function docSubmit(e) {
+				e.preventDefault();
+				const name = document.querySelector('#name').value;
+				const date = document.querySelector('#date').value;
+				ipcRenderer.send('doc:add', name + ' | ' + date);
+			}
+		</script>
+	</body>
+</html>
